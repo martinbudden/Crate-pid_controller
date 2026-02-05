@@ -64,6 +64,7 @@ version = "0.1.0"
 dependencies = [
  "assert_float_eq",
  "filters",
+ "num-traits",
 ]
 
 [[package]]
