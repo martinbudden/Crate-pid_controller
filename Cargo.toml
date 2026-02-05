@@ -1,0 +1,8 @@
+[package]
+name = "pid_controller"
+version = "0.1.0"
+edition = "2024"
+
+[dependencies]
+assert_float_eq = "1.2.0" # used for PidController
+filters = { git = "https://github.com/martinbudden/Crate-filters" } # used for test
