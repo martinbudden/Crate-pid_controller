@@ -483,8 +483,9 @@ where
     }
 }
 
-impl<T> From<PidConstants<T>> for PidController<T> 
-where T: Zero + Copy
+impl<T> From<PidConstants<T>> for PidController<T>
+where
+    T: Zero + Copy,
 {
     fn from(pid: PidConstants<T>) -> Self {
         Self {

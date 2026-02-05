@@ -36,4 +36,16 @@ The PID controller deliberately does not implement these features:
 3. Filtering of the D-term. Providing a D-term filter limits flexibility - the user no choice in the type of filter used.
    Instead the `update_delta` function can be used, with `measurement_delta` filtered by a filter provided by the user.
 
-[Original implementation in c++](https://github.com/martinbudden/Library-PID)
+## Original implementation
+
+This crate was originally implemented as a c++ library. The 
+[original implementation can be found here](https://github.com/martinbudden/Library-PID).
+
+## License
+
+Licensed under either of
+
+* Apache License, Version 2.0 ([LICENSE-APACHE](LICENSE-APACHE) or http://www.apache.org/licenses/LICENSE-2.0)
+* MIT license ([LICENSE-MIT](LICENSE-MIT) or http://opensource.org/licenses/MIT)
+
+at your option.

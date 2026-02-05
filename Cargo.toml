@@ -2,6 +2,8 @@
 name = "pid_controller"
 version = "0.1.0"
 edition = "2024"
+authors = ["Martin Budden"]
+license = "MIT OR Apache-2.0"
 
 [dependencies]
 assert_float_eq = "1.2.0" # used for PidController
