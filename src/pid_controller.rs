@@ -69,9 +69,9 @@ where
     pub fn new(kp: T, ki: T, kd: T) -> Self {
         Self {
             pid: PidConstants {
-                kp: kp,
-                ki: ki,
-                kd: kd,
+                kp,
+                ki,
+                kd,
                 ks: T::zero(),
                 kk: T::zero(),
             },
