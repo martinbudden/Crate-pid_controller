@@ -59,7 +59,7 @@ dependencies = [
 ]
 
 [[package]]
-name = "pid_controller"
+name = "pid-controller"
 version = "0.1.0"
 dependencies = [
  "assert_float_eq",
