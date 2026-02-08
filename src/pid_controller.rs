@@ -56,15 +56,7 @@ pub struct PidController<T> {
 
 impl<T> PidController<T>
 where
-    T: Copy
-        + Zero
-        + Neg
-        + PartialOrd
-        + PartialEq
-        + Signed
-        + Add<Output = T>
-        + Sub<Output = T>
-        + Mul<Output = T>,
+    T: Copy + Zero + Neg + PartialOrd + PartialEq + Signed + Add<Output = T> + Sub<Output = T> + Mul<Output = T>,
 {
     pub fn new(kp: T, ki: T, kd: T) -> Self {
         Self {
@@ -231,11 +223,7 @@ where
     /// assert_eq!(-0.05, output);
     /// ```
     pub fn update(&mut self, measurement: T, delta_t: T) -> T {
-        self.update_delta(
-            measurement,
-            measurement - self.measurement_previous,
-            delta_t,
-        )
+        self.update_delta(measurement, measurement - self.measurement_previous, delta_t)
     }
 
     /// PID update with `measurement_delta` specified.
@@ -260,21 +248,10 @@ where
     /// assert_eq!(-0.010000005, output);
     ///
     pub fn update_delta(&mut self, measurement: T, measurement_delta: T, delta_t: T) -> T {
-        self.update_delta_iterm(
-            measurement,
-            measurement_delta,
-            self.setpoint - measurement,
-            delta_t,
-        )
+        self.update_delta_iterm(measurement, measurement_delta, self.setpoint - measurement, delta_t)
     }
 
-    pub fn update_delta_iterm(
-        &mut self,
-        measurement: T,
-        measurement_delta: T,
-        i_term_error: T,
-        delta_t: T,
-    ) -> T {
+    pub fn update_delta_iterm(&mut self, measurement: T, measurement_delta: T, i_term_error: T, delta_t: T) -> T {
         self.measurement_previous = measurement;
         let error = self.setpoint - measurement;
         self.error_derivative = -measurement_delta / delta_t; // note minus sign, error delta has reverse polarity to measurement delta
@@ -392,8 +369,7 @@ where
     }
 
     pub fn update_skpd(&mut self, measurement: T, measurement_delta: T, delta_t: T) -> T {
-        self.update_spd(measurement, measurement_delta, delta_t)
-            + self.pid.kk * self.setpoint_derivative
+        self.update_spd(measurement, measurement_delta, delta_t) + self.pid.kk * self.setpoint_derivative
     }
 
     // accessor functions to obtain error values
@@ -613,12 +589,7 @@ mod tests {
         let iterm_relax_factor = 0.5; // set to a constant for the example, in practice it would vary depending on setpoint and/or measurement
         let iterm_error = (pid.setpoint() - measurement) * iterm_relax_factor;
 
-        let output = pid.update_delta_iterm(
-            measurement,
-            measurement_delta_filtered,
-            iterm_error,
-            delta_t,
-        );
+        let output = pid.update_delta_iterm(measurement, measurement_delta_filtered, iterm_error, delta_t);
 
         assert_eq!(-0.009525006, output);
     }
