@@ -228,11 +228,11 @@ where
     ///
     /// ```
     /// # use pid_controller::PidController;
-    /// # use filters::FilterPT1;
+    /// # use filters::FilterPt1f32;
     ///
     /// let delta_t: f32 = 0.01;
     /// let mut pid = PidController::<f32>::new(0.1, 0.0, 0.01);
-    /// let mut filter = FilterPT1::<f32>::new(1.0);
+    /// let mut filter = FilterPt1f32::<f32>::new(1.0);
     ///
     /// pid.set_setpoint(2.1);
     ///
@@ -571,10 +571,10 @@ mod tests {
 
     #[test]
     fn update_delta() {
-        use filters::FilterPT1;
+        use filters::FilterPt1f32;
         let delta_t: f32 = 0.01;
         let mut pid = PidController::<f32>::new(0.1, 0.0, 0.01);
-        let mut filter = FilterPT1::<f32>::new(1.0);
+        let mut filter = FilterPt1f32::<f32>::new(1.0);
 
         pid.set_setpoint(2.1);
 
@@ -587,10 +587,10 @@ mod tests {
 
     #[test]
     fn update_delta_iterm() {
-        use filters::FilterPT1;
+        use filters::FilterPt1f32;
         let delta_t: f32 = 0.01;
         let mut pid = PidController::new(0.1, 0.05, 0.01);
-        let mut filter = FilterPT1::<f32>::new(1.0);
+        let mut filter = FilterPt1f32::<f32>::new(1.0);
 
         pid.set_setpoint(2.1);
 
