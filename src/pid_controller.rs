@@ -228,17 +228,17 @@ where
     ///
     /// ```
     /// # use pid_controller::PidController;
-    /// # use filters::FilterPt1f32;
+    /// # use filters::{Pt1Filterf32,FilterSignal};
     ///
     /// let delta_t: f32 = 0.01;
     /// let mut pid = PidController::<f32>::new(0.1, 0.0, 0.01);
-    /// let mut filter = FilterPt1f32::<f32>::new(1.0);
+    /// let mut filter = Pt1Filterf32::<f32>::new(1.0);
     ///
     /// pid.set_setpoint(2.1);
     ///
     /// let measurement:f32 = 0.2;
     /// let measurement_delta = measurement - pid.previous_measurement();
-    /// let measurement_delta_filtered = filter.filter(measurement_delta);
+    /// let measurement_delta_filtered = filter.apply(measurement_delta);
     ///
     /// let output = pid.update_delta(measurement, measurement_delta_filtered, delta_t);
     ///
@@ -571,33 +571,33 @@ mod tests {
 
     #[test]
     fn update_delta() {
-        use filters::FilterPt1f32;
+        use filters::{FilterSignal, Pt1Filterf32};
         let delta_t: f32 = 0.01;
         let mut pid = PidController::<f32>::new(0.1, 0.0, 0.01);
-        let mut filter = FilterPt1f32::<f32>::new(1.0);
+        let mut filter = Pt1Filterf32::<f32>::new(1.0);
 
         pid.set_setpoint(2.1);
 
         let measurement: f32 = 0.2;
         let measurement_delta = measurement - pid.previous_measurement();
-        let measurement_delta_filtered = filter.filter(measurement_delta);
+        let measurement_delta_filtered = filter.apply(measurement_delta);
         let output = pid.update_delta(measurement, measurement_delta_filtered, delta_t);
         assert_eq!(-0.010000005, output);
     }
 
     #[test]
     fn update_delta_iterm() {
-        use filters::FilterPt1f32;
+        use filters::{FilterSignal, Pt1Filterf32};
         let delta_t: f32 = 0.01;
         let mut pid = PidController::new(0.1, 0.05, 0.01);
-        let mut filter = FilterPt1f32::<f32>::new(1.0);
+        let mut filter = Pt1Filterf32::<f32>::new(1.0);
 
         pid.set_setpoint(2.1);
 
         let measurement: f32 = 0.2;
 
         let measurement_delta = measurement - pid.previous_measurement();
-        let measurement_delta_filtered = filter.filter(measurement_delta);
+        let measurement_delta_filtered = filter.apply(measurement_delta);
 
         let iterm_relax_factor = 0.5; // set to a constant for the example, in practice it would vary depending on setpoint and/or measurement
         let iterm_error = (pid.setpoint() - measurement) * iterm_relax_factor;

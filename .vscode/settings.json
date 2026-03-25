@@ -4,6 +4,7 @@
         "codegen",
         "debuginfo",
         "feedforward",
+        "Filterf",
         "iterm",
         "openloop",
         "skpd",
