@@ -14,7 +14,7 @@ num-traits = "0.2.19"
 
 [dev-dependencies]
 assert_float_eq = "1.2.0" # used for test
-filters = { git = "https://github.com/martinbudden/Crate-filters" } # used for test
+filters = { git = "https://github.com/martinbudden/crate-filters" } # used for test
 
 # see https://doc.rust-lang.org/cargo/reference/profiles.html
 [profile.dev]

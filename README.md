@@ -39,7 +39,7 @@ The PID controller deliberately does not implement these features:
 ## Original implementation
 
 I originally implemented this crate as a C++ library:
-[Library-VectorQuaternionMatrix](https://github.com/martinbudden/Library-PID).
+[Library-PID](https://github.com/martinbudden/Library-PID).
 
 ## License
 
