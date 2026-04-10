@@ -200,7 +200,7 @@ where
         self.setpoint - self.setpoint_previous
     }
 
-    /// previous measurement, useful for DTerm filtering
+    /// previous measurement, useful for `Dterm` filtering
     pub fn previous_measurement(&self) -> T {
         self.measurement_previous
     }
@@ -496,8 +496,15 @@ where
 
 #[cfg(test)]
 mod tests {
+    #![allow(clippy::float_cmp)]
     use super::*;
-    use assert_float_eq::assert_f32_near;
+    #[allow(unused)]
+    use approx::assert_abs_diff_eq;
+    macro_rules! assert_near {
+        ($left:expr, $right:expr) => {
+            approx::assert_abs_diff_eq!($left, $right, epsilon = 4e-6);
+        };
+    }
 
     fn is_normal<T: Sized + Send + Sync + Unpin>() {}
 
@@ -582,7 +589,7 @@ mod tests {
         let measurement_delta = measurement - pid.previous_measurement();
         let measurement_delta_filtered = filter.update(measurement_delta);
         let output = pid.update_delta(measurement, measurement_delta_filtered, delta_t);
-        assert_eq!(-0.010000005, output);
+        assert_near!(-0.010_000_005, output);
     }
 
     #[test]
@@ -604,7 +611,7 @@ mod tests {
 
         let output = pid.update_delta_iterm(measurement, measurement_delta_filtered, iterm_error, delta_t);
 
-        assert_eq!(-0.009525006, output);
+        assert_near!(-0.009_525_006, output);
     }
 
     #[test]
@@ -741,7 +748,7 @@ mod tests {
         assert_eq!(error.p + error.i, output);
         assert_eq!(0.0, error.s);
         assert_eq!(0.0, error.k);
-        assert_f32_near!(1.1, output);
+        assert_near!(1.1, output);
 
         output = pid.update(5.0, delta_t);
         error = pid.error();
@@ -834,7 +841,7 @@ mod tests {
         assert_eq!(error.p + error.i, output);
         assert_eq!(0.0, error.s);
         assert_eq!(0.0, error.k);
-        assert_f32_near!(1.1, output);
+        assert_near!(1.1, output);
 
         output = pid.update_spi(5.0, delta_t);
         error = pid.error();
@@ -983,7 +990,7 @@ mod tests {
         output = pid.update(2.0, delta_t);
         error = pid.error();
         assert_eq!(-0.4, error.p);
-        assert_f32_near!(-1.8, error.i);
+        assert_near!(-1.8, error.i);
         assert_eq!(-2.2, output);
 
         output = pid.update(2.0, delta_t);
@@ -1058,7 +1065,7 @@ mod tests {
 
         output = pid.update(0.2, delta_t);
         error = pid.error();
-        assert_f32_near!(-0.04, error.p);
+        assert_near!(-0.04, error.p);
         assert_eq!(-0.2, pid.previous_error());
         assert_eq!(-1.46, error.i);
         assert_eq!(-1.5, output);

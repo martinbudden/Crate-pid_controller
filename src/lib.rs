@@ -4,6 +4,10 @@
 #![deny(clippy::expect_used)]
 #![deny(clippy::panic)]
 #![deny(unused_must_use)]
+#![warn(unused_results)]
+#![warn(clippy::pedantic)]
+#![allow(clippy::inline_always)]
+#![allow(clippy::return_self_not_must_use)]
 
 pub mod pid_controller;
 
