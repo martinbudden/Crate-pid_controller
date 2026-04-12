@@ -10,6 +10,6 @@
 #![allow(clippy::inline_always)]
 #![allow(clippy::return_self_not_must_use)]
 
-pub mod pid_controller;
+pub mod pidsk_controller;
 
-pub use pid_controller::{PidConstants, PidController, PidError};
+pub use pidsk_controller::{PidConstants, PidController, PidError};

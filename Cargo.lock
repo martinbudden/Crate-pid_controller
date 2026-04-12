@@ -40,7 +40,7 @@ dependencies = [
 ]
 
 [[package]]
-name = "pid-controller"
+name = "pidsk-controller"
 version = "0.1.0"
 dependencies = [
  "approx",

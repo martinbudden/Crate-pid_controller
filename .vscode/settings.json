@@ -15,6 +15,7 @@
         "katex",
         "libm",
         "openloop",
+        "pidsk",
         "rustc",
         "rustdoc",
         "skpd",

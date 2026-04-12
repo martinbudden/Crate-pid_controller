@@ -2,6 +2,7 @@ use core::ops::{Add, Mul, Neg, Sub};
 use num_traits::{Signed, Zero};
 
 /// PID controller with feed forward (open loop) control.
+/// This includes setpoint gain (classical feed forward) and setpoint derivative gain (kick).
 ///
 /// Uses "independent PID" notation, where the gains are denoted as kp, ki, kd etc.
 ///
@@ -207,7 +208,7 @@ where
 
     /// PID update.
     /// ```
-    /// # use pid_controller::PidController;
+    /// # use pidsk_controller::PidController;
     ///
     /// let delta_t: f32 = 0.01;
     /// let mut pid = PidController::<f32>::new(0.1, 0.0, 0.0);
@@ -227,7 +228,7 @@ where
     /// This allows the user to filter `measurement_delta` with a filter of their choice.
     ///
     /// ```
-    /// # use pid_controller::PidController;
+    /// # use pidsk_controller::PidController;
     /// # use signal_filters::{Pt1Filterf32,SignalFilter};
     ///
     /// let delta_t: f32 = 0.01;
