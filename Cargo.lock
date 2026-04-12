@@ -24,16 +24,6 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "9330f8b2ff13f34540b44e946ef35111825727b38d33286ef986142615121801"
 
 [[package]]
-name = "filters"
-version = "0.1.0"
-source = "git+https://github.com/martinbudden/crate-filters#1ec971431df7edc83a2675f5bb53bb1dcaf83b26"
-dependencies = [
- "num-traits",
- "rustc_version",
- "vector-quaternion-matrix",
-]
-
-[[package]]
 name = "libm"
 version = "0.2.16"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -54,9 +44,9 @@ name = "pid-controller"
 version = "0.1.0"
 dependencies = [
  "approx",
- "filters",
  "num-traits",
  "rustc_version",
+ "signal-filters",
 ]
 
 [[package]]
@@ -75,9 +65,21 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "8a7852d02fc848982e0c167ef163aaff9cd91dc640ba85e263cb1ce46fae51cd"
 
 [[package]]
-name = "vector-quaternion-matrix"
+name = "signal-filters"
 version = "0.1.0"
-source = "git+https://github.com/martinbudden/crate-vector-quaternion-matrix#9390c80f08355243e2eb6b4c86d6a1ff42bbbad4"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "97e96e43887c2ed9c67a862896ae2ee7daf9a5495b0ceddae3dba56933ad2591"
+dependencies = [
+ "num-traits",
+ "rustc_version",
+ "vqm",
+]
+
+[[package]]
+name = "vqm"
+version = "0.1.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "2cdb1b4cdc31d7aaf976d77d53351267227e34766b5980598c6ac8a987332170"
 dependencies = [
  "approx",
  "cfg-if",

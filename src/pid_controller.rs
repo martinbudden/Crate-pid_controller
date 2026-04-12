@@ -5,7 +5,7 @@ use num_traits::{Signed, Zero};
 ///
 /// Uses "independent PID" notation, where the gains are denoted as kp, ki, kd etc.
 ///
-/// (In the "dependent PID" notation Kc, tauI, and tauD parameters are used, where kp = Kc, ki = Kc/tauI, kd = Kc*tauD)
+/// (In the "dependent PID" notation Kc, tauI, and tauD parameters are used, where kp = Kc, ki = Kc/tauI, kd = Kc*tauD).
 ///
 #[derive(Clone, Copy, Debug, Default, PartialEq)]
 pub struct PidConstants<T> {
@@ -28,7 +28,7 @@ pub struct PidError<T> {
 #[derive(Clone, Copy, Debug, PartialEq)]
 pub struct PidController<T> {
     pid: PidConstants<T>,
-    /// saved value of pid.ki, so integration can be switched on and off
+    /// saved value of pid.ki, so integration can be switched on and off.
     ki_saved: T,
     measurement_previous: T,
 
@@ -41,13 +41,13 @@ pub struct PidController<T> {
     error_previous: T,
 
     // integral anti-windup parameters
-    /// Integral windup limit for positive integral
+    /// Integral windup limit for positive integral.
     integral_max: T,
-    /// Integral windup limit for negative integral
+    /// Integral windup limit for negative integral.
     integral_min: T,
     /// Threshold for PID integration. Can be set to afn integral wind-up due to movement in motor's backlash zone.
     integral_threshold: T,
-    /// For integral windup control
+    /// For integral windup control.
     output_saturation_value: T,
 }
 
@@ -109,7 +109,7 @@ where
         self.pid.kp
     }
 
-    /// Return the set value of ki, whether integration is turned on or not
+    /// Return the set value of ki, whether integration is turned on or not.
     pub fn ki(&self) -> T {
         self.ki_saved
     }
@@ -126,7 +126,7 @@ where
         self.pid.kk
     }
 
-    /// Return the set value of ki, whether integration is turned on or not
+    /// Return the set value of ki, whether integration is turned on or not.
     pub fn pid_constants(&self) -> PidConstants<T> {
         PidConstants {
             kp: self.pid.kp,
@@ -200,7 +200,7 @@ where
         self.setpoint - self.setpoint_previous
     }
 
-    /// previous measurement, useful for `Dterm` filtering
+    /// previous measurement, useful for `Dterm` filtering.
     pub fn previous_measurement(&self) -> T {
         self.measurement_previous
     }
@@ -228,7 +228,7 @@ where
     ///
     /// ```
     /// # use pid_controller::PidController;
-    /// # use filters::{Pt1Filterf32,SignalFilter};
+    /// # use signal_filters::{Pt1Filterf32,SignalFilter};
     ///
     /// let delta_t: f32 = 0.01;
     /// let mut pid = PidController::<f32>::new(0.1, 0.0, 0.01);
@@ -439,12 +439,12 @@ where
         self.setpoint_derivative
     }
 
-    /// get previous error, for test code
+    /// get previous error, for test code.
     pub fn previous_error(&self) -> T {
         self.error_previous
     }
 
-    /// reset all, for test code
+    /// reset all, for test code.
     pub fn reset_all(&mut self) {
         self.measurement_previous = T::zero();
         self.setpoint = T::zero();
@@ -578,7 +578,7 @@ mod tests {
 
     #[test]
     fn update_delta() {
-        use filters::{Pt1Filterf32, SignalFilter};
+        use signal_filters::{Pt1Filterf32, SignalFilter};
         let delta_t: f32 = 0.01;
         let mut pid = PidController::<f32>::new(0.1, 0.0, 0.01);
         let mut filter = Pt1Filterf32::new(1.0);
@@ -594,7 +594,7 @@ mod tests {
 
     #[test]
     fn update_delta_iterm() {
-        use filters::{Pt1Filterf32, SignalFilter};
+        use signal_filters::{Pt1Filterf32, SignalFilter};
         let delta_t: f32 = 0.01;
         let mut pid = PidController::new(0.1, 0.05, 0.01);
         let mut filter = Pt1Filterf32::new(1.0);

@@ -1,4 +1,4 @@
-# `pid_controller` Rust Crate ![license](https://img.shields.io/badge/license-MIT-green) [![License](https://img.shields.io/badge/License-Apache_2.0-blue.svg)](https://opensource.org/licenses/Apache-2.0)   ![open source](https://badgen.net/badge/open/source/blue?icon=github)
+# `pid-controller` Rust Crate ![license](https://img.shields.io/badge/license-MIT-green) [![License](https://img.shields.io/badge/License-Apache_2.0-blue.svg)](https://opensource.org/licenses/Apache-2.0)   ![open source](https://badgen.net/badge/open/source/blue?icon=github)
 
 This crate contains a [PID controller](https://en.wikipedia.org/wiki/Proportional-integral-derivative_controller) with
 additional [feed forward](https://en.wikipedia.org/wiki/Feed_forward_(control)) and setpoint components.
