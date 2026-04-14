@@ -13,7 +13,7 @@
 mod pidsk_controller;
 mod pid;
 
-pub use pid::{Pid, UpdatePid};
-pub use pidsk_controller::{PidConstants, PidConstantsf32, PidConstantsf64};
-pub use pidsk_controller::{PidController, PidControllerf32, PidControllerf64};
-pub use pidsk_controller::{PidError, PidErrorf32, PidErrorf64};
+pub use pid::{PidController, UpdatePidController};
+pub use pidsk_controller::{PidGains, PidGainsf32, PidGainsf64};
+pub use pidsk_controller::{Pid, Pidf32, Pidf64};
+pub use pidsk_controller::{PidErrors, PidErrorf32, PidErrorf64};
