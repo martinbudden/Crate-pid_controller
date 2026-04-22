@@ -1,5 +1,5 @@
-use pidsk_controller::{Pid,Pidf32,PidGainsf32,PidErrorf32};
 use pidsk_controller::PidController;
+use pidsk_controller::{Pid, PidErrorf32, PidGainsf32, Pidf32};
 #[cfg(test)]
 mod tests {
     #![allow(clippy::float_cmp)]

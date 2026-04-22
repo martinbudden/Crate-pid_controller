@@ -548,7 +548,7 @@ where
                 integral_min: T::default(),
                 integral_threshold: T::default(),
                 output_saturation_value: T::default(),
-            }
+            },
         }
     }
 }

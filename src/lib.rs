@@ -10,10 +10,10 @@
 #![allow(clippy::inline_always)]
 #![allow(clippy::return_self_not_must_use)]
 
-mod pidsk_controller;
 mod pid;
+mod pidsk_controller;
 
 pub use pid::{PidController, UpdatePidController};
-pub use pidsk_controller::{PidGains, PidGainsf32, PidGainsf64};
 pub use pidsk_controller::{Pid, Pidf32, Pidf64};
-pub use pidsk_controller::{PidErrors, PidErrorf32, PidErrorf64};
+pub use pidsk_controller::{PidErrorf32, PidErrorf64, PidErrors};
+pub use pidsk_controller::{PidGains, PidGainsf32, PidGainsf64};
