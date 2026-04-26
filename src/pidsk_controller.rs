@@ -11,10 +11,10 @@ pub type Pidf64 = Pid<f64>;
 pub type PidGainsf64 = PidGains<f64>;
 pub type PidErrorf64 = PidErrors<f64>;
 
-/// PID controller with open loop control.
-/// This includes setpoint gain (classical feed forward) and setpoint derivative gain (kick - called feedforward by Betaflight).
-///
-/// Uses "independent PID" notation, where the gains are denoted as kp, ki, kd etc.
+/// Gains for PID controller.
+/// Includes classical PID (proportional, integral, and derivative) gains and also
+/// setpoint gain (classical feed forward) and setpoint derivative gain (kick - called feedforward by Betaflight).<br>
+/// Uses "independent PID" notation, where the gains are denoted as kp, ki, kd etc.<br>
 ///
 /// (In the "dependent PID" notation `kc`, `tau_i`, and `tau_d` parameters are used, where `kp = kc`, `ki = kc/tau_i`, `kd = kc*tau_d`).
 ///
@@ -50,7 +50,8 @@ where
     }
 }
 
-/// Pid integral anti-windup parameters.
+/// Pid integral anti-windup parameters.<br>
+///
 #[derive(Clone, Copy, Debug, Default, PartialEq)]
 pub struct PidLimits<T> {
     /// Integral windup limit for positive integral.
@@ -63,6 +64,8 @@ pub struct PidLimits<T> {
     output_saturation_value: T,
 }
 
+/// P, I, D, S, and K errors as calculated by PID controller.<br><br>
+///
 #[derive(Clone, Copy, Debug, Default, PartialEq)]
 pub struct PidErrors<T> {
     pub p: T,
@@ -72,6 +75,12 @@ pub struct PidErrors<T> {
     pub k: T,
 }
 
+/// PID controller with open loop control.
+/// This includes setpoint gain (classical feed forward) and setpoint derivative gain (kick - called feedforward by Betaflight).
+/// Uses "independent PID" notation, where the gains are denoted as kp, ki, kd etc.<br><br>
+///
+/// (In the "dependent PID" notation `kc`, `tau_i`, and `tau_d` parameters are used, where `kp = kc`, `ki = kc/tau_i`, `kd = kc*tau_d`).
+///
 #[derive(Clone, Copy, Debug, PartialEq)]
 pub struct Pid<T> {
     gains: PidGains<T>,

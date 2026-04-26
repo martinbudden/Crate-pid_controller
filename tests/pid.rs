@@ -6,6 +6,7 @@ mod tests {
     use super::*;
     #[allow(unused)]
     use approx::assert_abs_diff_eq;
+    use pidsk_controller::UpdatePidController;
     macro_rules! assert_near {
         ($left:expr, $right:expr) => {
             approx::assert_abs_diff_eq!($left, $right, epsilon = 4e-6);
@@ -82,6 +83,17 @@ mod tests {
 
         let measurement: f32 = 9.2;
         let output = pid.update(measurement, delta_t);
+        assert_eq!(-0.05, output);
+    }
+
+    #[test]
+    fn adjust() {
+        let delta_t: f32 = 0.01;
+        let mut pid_controller = Pidf32::new(0.1, 0.0, 0.0);
+        pid_controller.set_setpoint(8.7);
+
+        let measurement: f32 = 9.2;
+        let output = measurement.adjust_using(&mut pid_controller, delta_t);
         assert_eq!(-0.05, output);
     }
 

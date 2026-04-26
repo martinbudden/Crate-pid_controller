@@ -1,4 +1,5 @@
-/// PID controller trait.
+/// PID controller function-call trait.<br><br>
+///
 pub trait PidController<T> {
     fn update(&mut self, measurement: T, delta_t: T) -> T;
     fn update_delta(&mut self, measurement: T, measurement_delta: T, delta_t: T) -> T;
@@ -10,6 +11,16 @@ pub trait PidController<T> {
     fn update_skpd(&mut self, measurement: T, measurement_delta: T, delta_t: T) -> T;
 }
 
+/// Trait to allow `PidController` to be used with method-call syntax, ie:<br>
+/// `let output = measurement.adjust_using(&mut pid_controller, dt)`.
+/// ```
+/// # use pidsk_controller::Pidf32;
+/// # use pidsk_controller::UpdatePidController;
+/// # let mut pid_controller = Pidf32::new(0.1, 0.1, 0.01);
+/// # let dt = 0.001_f32;
+/// let measurement: f32 = 9.2;
+/// let output = measurement.adjust_using(&mut pid_controller, dt);
+/// ```
 pub trait UpdatePidController<T> {
     fn adjust_using<P: PidController<T>>(self, pid_controller: &mut P, delta_t: T) -> Self;
     fn adjust_using_d<P: PidController<T>>(self, pid_controller: &mut P, measurement_delta: T, delta_t: T) -> Self;
