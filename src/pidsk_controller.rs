@@ -1,5 +1,6 @@
 use core::ops::{Add, Div, Mul, Neg, Sub};
 use num_traits::{One, Signed, Zero};
+use serde::{Deserialize, Serialize};
 
 use crate::pid::PidController;
 
@@ -30,7 +31,7 @@ impl ConstZero for f64 {
 ///
 /// (In the "dependent PID" notation `kc`, `tau_i`, and `tau_d` parameters are used, where `kp = kc`, `ki = kc/tau_i`, `kd = kc*tau_d`).
 ///
-#[derive(Clone, Copy, Debug, PartialEq)]
+#[derive(Clone, Copy, Debug, PartialEq, Deserialize, Serialize)]
 pub struct PidGains<T> {
     pub kp: T, // proportional gain
     pub ki: T, // integral gain
@@ -59,7 +60,7 @@ where
 
 /// Pid integral anti-windup parameters.<br>
 ///
-#[derive(Clone, Copy, Debug, PartialEq)]
+#[derive(Clone, Copy, Debug, PartialEq, Deserialize, Serialize)]
 pub struct PidLimits<T> {
     /// Integral windup limit for positive integral.
     integral_max: T,
@@ -96,7 +97,7 @@ where
 
 /// P, I, D, S, and K errors as calculated by PID controller.<br><br>
 ///
-#[derive(Clone, Copy, Debug, PartialEq)]
+#[derive(Clone, Copy, Debug, PartialEq, Deserialize, Serialize)]
 pub struct PidErrors<T> {
     pub p: T,
     pub i: T,
@@ -357,6 +358,22 @@ impl<T> Pid<T>
 where
     T: Copy + Zero + Neg<Output = T>,
 {
+    pub fn set_gains(&mut self, gains: PidGains<T>) {
+        self.gains = gains;
+        self.ki_saved = self.gains.ki;
+    }
+
+    /// Return the pid gains. The set value of ki is returned, whether integration is turned on or not.
+    pub fn gains(&self) -> PidGains<T> {
+        PidGains {
+            kp: self.gains.kp,
+            ki: self.ki_saved,
+            kd: self.gains.kd,
+            ks: self.gains.ks,
+            kk: self.gains.kk,
+        }
+    }
+
     pub fn set_kp(&mut self, kp: T) {
         self.gains.kp = kp;
     }
@@ -402,17 +419,6 @@ where
 
     pub fn kk(&self) -> T {
         self.gains.kk
-    }
-
-    /// Return the set value of ki, whether integration is turned on or not.
-    pub fn pid_gains(&self) -> PidGains<T> {
-        PidGains {
-            kp: self.gains.kp,
-            ki: self.ki_saved,
-            kd: self.gains.kd,
-            ks: self.gains.ks,
-            kk: self.gains.kk,
-        }
     }
 
     pub fn reset_integral(&mut self) {

@@ -22,6 +22,7 @@
         "pidsk",
         "rustc",
         "rustdoc",
+        "serde",
         "skpd",
         "skpi",
         "thumbv"
