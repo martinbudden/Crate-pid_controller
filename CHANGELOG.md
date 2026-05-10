@@ -23,17 +23,26 @@ Once the API has stabilized this project will adopt semantic versioning, the fir
 
 ### Security
 
-## [0.1.1] - 2023-04-26
+## [0.1.3] - 2026-05-10
+
+### Added
+
+- Added `set_gains` to `Pid`.
+- Added serialization to `PidGains`, `PidLimits`, and `PidErrors`.
+
+## [0.1.2] - 2026-05-06
+
+### Changed
+
+- Updated to signal-filters 0.1.3.
+
+## [0.1.1] - 2026-04-26
 
 ### Added
 
 - This changelog.
 - CONTRIBUTING.md
 
-### Changed
-
-- Changed to use `vqm` version `0.1.1`
-
-## [0.1.0] - 2023-04-12
+## [0.1.0] - 2026-04-12
 
 Initial release.
