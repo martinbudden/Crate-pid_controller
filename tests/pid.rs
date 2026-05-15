@@ -37,8 +37,7 @@ mod tests {
 
     #[test]
     fn test_pid_init() {
-        let pid_gains = PidGainsf32::default();
-        let pid = Pidf32::new(pid_gains);
+        let pid = Pidf32::new();
         assert_eq!(1.0, pid.kp());
         assert_eq!(0.0, pid.ki());
         assert_eq!(0.0, pid.kd());
@@ -63,7 +62,7 @@ mod tests {
             ks: 0.0,
             kk: 0.0,
         };
-        let mut pid = Pidf32::new(pid_gains);
+        let mut pid = Pidf32::with_gains(pid_gains);
 
         assert_eq!(5.0, pid.kp());
         assert_eq!(3.0, pid.ki());
@@ -94,7 +93,7 @@ mod tests {
             kk: 0.0,
         };
 
-        let mut pid = Pidf32::new(pid_gains);
+        let mut pid = Pidf32::with_gains(pid_gains);
         pid.set_setpoint(8.7);
 
         let measurement: f32 = 9.2;
@@ -112,7 +111,7 @@ mod tests {
             ks: 0.0,
             kk: 0.0,
         };
-        let mut pid_controller = Pidf32::new(pid_gains);
+        let mut pid_controller = Pidf32::with_gains(pid_gains);
         pid_controller.set_setpoint(8.7);
 
         let measurement: f32 = 9.2;
@@ -131,8 +130,8 @@ mod tests {
             ks: 0.0,
             kk: 0.0,
         };
-        let mut pid = Pidf32::new(pid_gains);
-        let mut filter = Pt1Filterf32::new(1.0);
+        let mut pid = Pidf32::with_gains(pid_gains);
+        let mut filter = Pt1Filterf32::new();
 
         pid.set_setpoint(2.1);
 
@@ -154,8 +153,8 @@ mod tests {
             ks: 0.0,
             kk: 0.0,
         };
-        let mut pid = Pidf32::new(pid_gains);
-        let mut filter = Pt1Filterf32::new(1.0);
+        let mut pid = Pidf32::with_gains(pid_gains);
+        let mut filter = Pt1Filterf32::new();
 
         pid.set_setpoint(2.1);
 
@@ -182,7 +181,7 @@ mod tests {
             ks: 0.0,
             kk: 0.0,
         };
-        let mut pid = Pidf32::new(pid_gains);
+        let mut pid = Pidf32::with_gains(pid_gains);
 
         assert_eq!(1.0, pid.kp());
         assert_eq!(0.0, pid.ki());
@@ -254,7 +253,7 @@ mod tests {
             kk: 0.0,
         };
 
-        let mut pid = Pidf32::new(pid_gains);
+        let mut pid = Pidf32::with_gains(pid_gains);
 
         assert_eq!(0.3, pid.kp());
         assert_eq!(0.2, pid.ki());
@@ -355,7 +354,7 @@ mod tests {
             kk: 0.0,
         };
 
-        let mut pid = Pidf32::new(pid_gains);
+        let mut pid = Pidf32::with_gains(pid_gains);
 
         assert_eq!(0.3, pid.kp());
         assert_eq!(0.2, pid.ki());
@@ -456,7 +455,7 @@ mod tests {
             kk: 0.0,
         };
 
-        let mut pid = Pidf32::new(pid_gains);
+        let mut pid = Pidf32::with_gains(pid_gains);
 
         assert_eq!(0.0, pid.setpoint());
 
@@ -561,7 +560,7 @@ mod tests {
             kk: 0.0,
         };
 
-        let mut pid = Pidf32::new(pid_gains);
+        let mut pid = Pidf32::with_gains(pid_gains);
         pid.set_integral_limit(2.0);
 
         assert_eq!(0.0, pid.setpoint());
@@ -614,7 +613,7 @@ mod tests {
             kk: 0.0,
         };
 
-        let mut pid = Pidf32::new(pid_gains);
+        let mut pid = Pidf32::with_gains(pid_gains);
         pid.set_output_saturation_value(1.5);
 
         assert_eq!(0.0, pid.setpoint());
@@ -700,7 +699,7 @@ mod tests {
             ks: 0.0,
             kk: 0.0,
         };
-        let mut pid = Pidf32::new(pid_gains);
+        let mut pid = Pidf32::with_gains(pid_gains);
         pid.set_output_saturation_value(1.5);
 
         assert_eq!(0.0, pid.setpoint());

@@ -5,6 +5,7 @@
         "Betaflight",
         "Budden",
         "bytemuck",
+        "byteorder",
         "clippy",
         "codegen",
         "debuginfo",
@@ -14,6 +15,7 @@
         "feedforward",
         "Filterf",
         "Gainsf",
+        "heapless",
         "Iterm",
         "katex",
         "libm",
@@ -22,9 +24,11 @@
         "pidsk",
         "rustc",
         "rustdoc",
+        "scopeguard",
         "serde",
         "skpd",
         "skpi",
+        "thiserror",
         "thumbv"
     ]
 }

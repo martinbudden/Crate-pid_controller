@@ -1,58 +1,63 @@
-use core::ops::{Add, Div, Mul, Neg, Sub};
-use num_traits::{One, Signed, Zero};
+use num_traits::{ConstOne, ConstZero, Float};
 use serde::{Deserialize, Serialize};
 
-use crate::pid::PidController;
-
+/// `Pid` using `f32` values.
 pub type Pidf32 = Pid<f32>;
+/// `PidGains` using `f32` values.
 pub type PidGainsf32 = PidGains<f32>;
+/// `PidError` using `f32` values.
 pub type PidErrorf32 = PidErrors<f32>;
 
+/// `Pid` using `f64` values.
 pub type Pidf64 = Pid<f64>;
+/// `PidGains` using `f64` values.
 pub type PidGainsf64 = PidGains<f64>;
+/// `PidError` using `f64` values.
 pub type PidErrorf64 = PidErrors<f64>;
 
-pub trait ConstZero {
-    const ZERO: Self;
-}
-
-impl ConstZero for f32 {
-    const ZERO: Self = 0.0;
-}
-
-impl ConstZero for f64 {
-    const ZERO: Self = 0.0;
+/// PID controller function-call trait.<br>
+/// Declares the various forms of the `update` functions.<br><br>
+///
+pub trait PidController<T> {
+    fn update(&mut self, measurement: T, delta_t: T) -> T;
+    fn update_delta(&mut self, measurement: T, measurement_delta: T, delta_t: T) -> T;
+    fn update_delta_iterm(&mut self, measurement: T, measurement_delta: T, iterm_error: T, delta_t: T) -> T;
+    fn update_sp(&mut self, measurement: T) -> T;
+    fn update_spi(&mut self, measurement: T, delta_t: T) -> T;
+    fn update_skpi(&mut self, measurement: T, delta_t: T) -> T;
+    fn update_spd(&mut self, measurement: T, measurement_delta: T, delta_t: T) -> T;
+    fn update_skpd(&mut self, measurement: T, measurement_delta: T, delta_t: T) -> T;
 }
 
 /// Gains for PID controller.
-/// Includes classical PID (proportional, integral, and derivative) gains and also
-/// setpoint gain (classical feed forward) and setpoint derivative gain (kick - called feedforward by Betaflight).<br>
-/// Uses "independent PID" notation, where the gains are denoted as kp, ki, kd etc.<br>
+/// Includes classical PID (`kp`, `ki`, and `kd`) gains and also<br>
+/// setpoint gain (`ks` - classical feed forward) and<br>
+/// setpoint derivative gain (`kk`. kick - called feedforward by Betaflight).<br>
 ///
+/// Uses "independent PID" notation, where the gains are denoted as kp, ki, kd etc.<br>
 /// (In the "dependent PID" notation `kc`, `tau_i`, and `tau_d` parameters are used, where `kp = kc`, `ki = kc/tau_i`, `kd = kc*tau_d`).
 ///
 #[derive(Clone, Copy, Debug, PartialEq, Deserialize, Serialize)]
 pub struct PidGains<T> {
-    pub kp: T, // proportional gain
-    pub ki: T, // integral gain
-    pub kd: T, // derivative gain
-    pub ks: T, // setpoint gain
-    pub kk: T, // setpoint derivative gain ('kick')
+    /// proportional gain.
+    pub kp: T,
+    /// integral gain.
+    pub ki: T,
+    /// derivative gain.
+    pub kd: T,
+    /// setpoint gain.
+    pub ks: T,
+    /// setpoint derivative gain ('kick').
+    pub kk: T,
 }
 
-impl<T> Default for PidGains<T>
-where
-    T: Copy + Default + Zero + One,
-{
+impl<T: Float> Default for PidGains<T> {
     fn default() -> Self {
         Self::new(T::one(), T::zero(), T::zero(), T::zero(), T::zero())
     }
 }
 
-impl<T> PidGains<T>
-where
-    T: Copy + Default,
-{
+impl<T: Float> PidGains<T> {
     pub const fn new(kp: T, ki: T, kd: T, ks: T, kk: T) -> Self {
         Self { kp, ki, kd, ks, kk }
     }
@@ -72,19 +77,13 @@ pub struct PidLimits<T> {
     output_saturation_value: T,
 }
 
-impl<T> Default for PidLimits<T>
-where
-    T: Copy + ConstZero,
-{
+impl<T: Float + ConstZero> Default for PidLimits<T> {
     fn default() -> Self {
         Self::new()
     }
 }
 
-impl<T> PidLimits<T>
-where
-    T: Copy + ConstZero,
-{
+impl<T: Float + ConstZero> PidLimits<T> {
     pub const fn new() -> Self {
         Self {
             integral_max: T::ZERO,
@@ -106,29 +105,25 @@ pub struct PidErrors<T> {
     pub k: T,
 }
 
-impl<T> Default for PidErrors<T>
-where
-    T: Copy + Default + Zero,
-{
+impl<T: Float> Default for PidErrors<T> {
     fn default() -> Self {
         Self::new(T::zero(), T::zero(), T::zero(), T::zero(), T::zero())
     }
 }
 
-impl<T> PidErrors<T>
-where
-    T: Copy + Default,
-{
+impl<T: Float> PidErrors<T> {
     #[allow(clippy::many_single_char_names)]
     pub const fn new(p: T, i: T, d: T, s: T, k: T) -> Self {
         Self { p, i, d, s, k }
     }
 }
 
-/// PID controller with open loop control.
-/// This includes setpoint gain (classical feed forward) and setpoint derivative gain (kick - called feedforward by Betaflight).
-/// Uses "independent PID" notation, where the gains are denoted as kp, ki, kd etc.<br><br>
+/// PID controller with open loop control (generic form).<br>
+/// `Pidf32` and `Pidf64` aliases are available.<br>
+/// This includes setpoint gain (classical feed forward) and<br>
+/// setpoint derivative gain (kick - called feedforward by Betaflight).<br><br>
 ///
+/// Uses "independent PID" notation, where the gains are denoted as kp, ki, kd etc.<br>
 /// (In the "dependent PID" notation `kc`, `tau_i`, and `tau_d` parameters are used, where `kp = kc`, `ki = kc/tau_i`, `kd = kc*tau_d`).
 ///
 #[derive(Clone, Copy, Debug, PartialEq)]
@@ -158,20 +153,14 @@ pub struct Pid<T> {
 ///
 /// assert_eq!(1.0, pid.kp());
 /// ```
-impl<T> Default for Pid<T>
-where
-    T: Copy + ConstZero + Default + Zero + One,
-{
+impl<T: Float + ConstZero + ConstOne> Default for Pid<T> {
     fn default() -> Self {
-        Self::new(PidGains::default())
+        Self::new()
     }
 }
 
-impl<T> Pid<T>
-where
-    T: Copy + ConstZero,
-{
-    pub const fn new(gains: PidGains<T>) -> Self {
+impl<T: Float + ConstZero + ConstOne> Pid<T> {
+    pub const fn with_gains(gains: PidGains<T>) -> Self {
         Self {
             gains,
             ki_saved: gains.ki,
@@ -185,17 +174,18 @@ where
             limits: PidLimits::new(),
         }
     }
+
+    pub const fn new() -> Self {
+        Self::with_gains(PidGains::new(T::ONE, T::ZERO, T::ZERO, T::ZERO, T::ZERO))
+    }
 }
 
-impl<T> PidController<T> for Pid<T>
-where
-    T: Copy + Zero + Signed + PartialOrd + Add<Output = T> + Mul<Output = T>,
-{
+impl<T: Float> PidController<T> for Pid<T> {
     /// PID update.
     /// ```
     /// # use pidsk_controller::{Pidf32,PidController,PidGainsf32};
     /// let delta_t: f32 = 0.01;
-    /// let mut pid = Pidf32::new(PidGainsf32 { kp:0.1, ki:0.0, kd:0.0, ks:0.0, kk:0.0 });
+    /// let mut pid = Pidf32::with_gains(PidGainsf32 { kp:0.1, ki:0.0, kd:0.0, ks:0.0, kk:0.0 });
     ///
     /// pid.set_setpoint(8.7);
     ///
@@ -215,8 +205,8 @@ where
     /// # use pidsk_controller::{Pidf32,PidController,PidGainsf32};
     /// # use signal_filters::{Pt1Filterf32,SignalFilter};
     /// let delta_t: f32 = 0.01;
-    /// let mut pid = Pidf32::new(PidGainsf32 { kp:0.1, ki:0.0, kd:0.01, ks:0.0, kk:0.0 });
-    /// let mut filter = Pt1Filterf32::new(1.0);
+    /// let mut pid = Pidf32::with_gains(PidGainsf32 { kp:0.1, ki:0.0, kd:0.01, ks:0.0, kk:0.0 });
+    /// let mut filter = Pt1Filterf32::with_k(1.0);
     ///
     /// pid.set_setpoint(2.1);
     ///
@@ -354,10 +344,7 @@ where
     }
 }
 
-impl<T> Pid<T>
-where
-    T: Copy + Zero + Neg<Output = T>,
-{
+impl<T: Float> Pid<T> {
     pub fn set_gains(&mut self, gains: PidGains<T>) {
         self.gains = gains;
         self.ki_saved = self.gains.ki;
@@ -480,10 +467,7 @@ where
     }
 }
 
-impl<T> Pid<T>
-where
-    T: Copy + Sub<Output = T> + Div<Output = T>,
-{
+impl<T: Float> Pid<T> {
     pub fn setpoint_delta(&self) -> T {
         self.setpoint - self.setpoint_previous
     }
@@ -495,10 +479,7 @@ where
     }
 }
 
-impl<T> Pid<T>
-where
-    T: Copy + Zero + Signed + PartialEq + Add<Output = T> + Mul<Output = T>,
-{
+impl<T: Float> Pid<T> {
     // accessor functions to obtain error values
     pub fn error(&self) -> PidErrors<T> {
         PidErrors {
@@ -586,10 +567,7 @@ where
     }
 }
 
-impl<T> From<PidGains<T>> for Pid<T>
-where
-    T: Default + Copy,
-{
+impl<T: Float + Default> From<PidGains<T>> for Pid<T> {
     fn from(pid: PidGains<T>) -> Self {
         Self {
             gains: PidGains {

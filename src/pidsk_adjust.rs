@@ -1,15 +1,4 @@
-/// PID controller function-call trait.<br><br>
-///
-pub trait PidController<T> {
-    fn update(&mut self, measurement: T, delta_t: T) -> T;
-    fn update_delta(&mut self, measurement: T, measurement_delta: T, delta_t: T) -> T;
-    fn update_delta_iterm(&mut self, measurement: T, measurement_delta: T, iterm_error: T, delta_t: T) -> T;
-    fn update_sp(&mut self, measurement: T) -> T;
-    fn update_spi(&mut self, measurement: T, delta_t: T) -> T;
-    fn update_skpi(&mut self, measurement: T, delta_t: T) -> T;
-    fn update_spd(&mut self, measurement: T, measurement_delta: T, delta_t: T) -> T;
-    fn update_skpd(&mut self, measurement: T, measurement_delta: T, delta_t: T) -> T;
-}
+use crate::pidsk_controller::PidController;
 
 #[allow(clippy::doc_paragraphs_missing_punctuation)]
 /// Trait to allow `PidController` to be used with method-call syntax, ie:<br>
@@ -17,7 +6,7 @@ pub trait PidController<T> {
 /// ```
 /// # use pidsk_controller::{Pidf32,PidGainsf32};
 /// # use pidsk_controller::UpdatePidController;
-/// # let mut pid_controller = Pidf32::new(PidGainsf32 { kp:0.1, ki:0.1, kd:0.01, ks: 0.0, kk: 0.0 });
+/// # let mut pid_controller = Pidf32::with_gains(PidGainsf32 { kp:0.1, ki:0.1, kd:0.01, ks: 0.0, kk: 0.0 });
 /// # let dt = 0.001_f32;
 /// let measurement: f32 = 9.2;
 /// let output = measurement.adjust_using(&mut pid_controller, dt);

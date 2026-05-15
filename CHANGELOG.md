@@ -23,6 +23,14 @@ Once the API has stabilized this project will adopt semantic versioning, the fir
 
 ### Security
 
+## [0.1.4] - 2026-05-14
+
+### Changed
+
+- Improved documentation.
+- Rearranged modules.
+- Consolidated numeric traits.
+
 ## [0.1.3] - 2026-05-10
 
 ### Added
