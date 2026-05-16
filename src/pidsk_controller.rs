@@ -51,9 +51,9 @@ pub struct Pid<T> {
     setpoint_previous: T,
     setpoint_derivative: T,
 
-    error_derivative: T,
+    error: T,
     error_integral: T,
-    error_previous: T,
+    error_derivative: T,
 }
 
 /// Default `Pid`.
@@ -82,9 +82,9 @@ impl<T: Float + ConstZero + ConstOne> Pid<T> {
             setpoint: T::ZERO,
             setpoint_previous: T::ZERO,
             setpoint_derivative: T::ZERO,
-            error_derivative: T::ZERO,
+            error: T::ZERO,
             error_integral: T::ZERO,
-            error_previous: T::ZERO,
+            error_derivative: T::ZERO,
         }
     }
 
@@ -138,8 +138,7 @@ impl<T: Float> PidController<T> for Pid<T> {
     fn update_delta_iterm(&mut self, measurement: T, measurement_delta: T, iterm_error: T, delta_t: T) -> T {
         self.measurement_previous = measurement;
 
-        let error = self.setpoint - measurement;
-        self.error_previous = error;
+        self.error = self.setpoint - measurement;
         self.error_derivative = -measurement_delta / delta_t; // note minus sign, error delta has reverse polarity to measurement delta
 
         let partial_sum = self.partial_sum();
@@ -180,24 +179,22 @@ impl<T: Float> PidController<T> for Pid<T> {
 
     fn update_sp(&mut self, measurement: T) -> T {
         self.measurement_previous = measurement;
-        let error = self.setpoint - measurement;
-        self.error_previous = error;
+        self.error = self.setpoint - measurement;
 
         // The P (no I, no D) calculation with additional S setpoint(openloop) term
-        //         P          + S
-        self.gains.kp * error + self.gains.ks * self.setpoint
+        //         P               + S
+        self.gains.kp * self.error + self.gains.ks * self.setpoint
     }
 
     fn update_spd(&mut self, measurement: T, measurement_delta: T, delta_t: T) -> T {
         self.measurement_previous = measurement;
-        let error = self.setpoint - measurement;
-        self.error_previous = error;
+        self.error = self.setpoint - measurement;
 
         self.error_derivative = -measurement_delta / delta_t; // note minus sign, error delta has reverse polarity to measurement delta
 
         // The PD (no I) calculation with additional S setpoint(openloop) term
-        //         P          + D                                     + S
-        self.gains.kp * error + self.gains.kd * self.error_derivative + self.gains.ks * self.setpoint
+        //         P               + D                                     + S
+        self.gains.kp * self.error + self.gains.kd * self.error_derivative + self.gains.ks * self.setpoint
     }
 
     fn update_skpd(&mut self, measurement: T, measurement_delta: T, delta_t: T) -> T {
@@ -210,7 +207,7 @@ impl<T: Float> Pid<T> {
     /// has additional S setpoint(openloop) and K kick(setpoint derivative) terms.
     #[inline]
     pub fn partial_sum(&self) -> T {
-        self.gains.kp * self.error_previous
+        self.gains.kp * self.error
             + self.gains.kd * self.error_derivative
             + self.gains.ks * self.setpoint
             + self.gains.kk * self.setpoint_derivative
@@ -375,7 +372,7 @@ impl<T: Float + Default> From<PidGains<T>> for Pid<T> {
             setpoint_derivative: T::default(),
             error_derivative: T::default(),
             error_integral: T::default(),
-            error_previous: T::default(),
+            error: T::default(),
         }
     }
 }
@@ -464,7 +461,7 @@ impl<T: Float> Pid<T> {
     // accessor functions to obtain error values
     pub fn error(&self) -> PidErrors<T> {
         PidErrors {
-            p: self.error_previous * self.gains.kp,
+            p: self.error * self.gains.kp,
             i: self.error_integral, // _error_integral is already multiplied by self.pid.ki
             d: self.error_derivative * self.gains.kd,
             s: self.setpoint * self.gains.ks,
@@ -474,7 +471,7 @@ impl<T: Float> Pid<T> {
 
     pub fn error_raw(&self) -> PidErrors<T> {
         PidErrors {
-            p: self.error_previous,
+            p: self.error,
             i: if self.gains.ki == T::zero() {
                 T::zero()
             } else {
@@ -488,7 +485,7 @@ impl<T: Float> Pid<T> {
 
     /// get previous error, for test code.
     pub fn previous_error(&self) -> T {
-        self.error_previous
+        self.error
     }
 
     /// reset all, for test code.
@@ -497,8 +494,8 @@ impl<T: Float> Pid<T> {
         self.setpoint = T::zero();
         self.setpoint_previous = T::zero();
         self.setpoint_derivative = T::zero();
-        self.error_derivative = T::zero();
+        self.error = T::zero();
         self.error_integral = T::zero();
-        self.error_previous = T::zero();
+        self.error_derivative = T::zero();
     }
 }
