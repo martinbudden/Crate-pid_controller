@@ -31,93 +31,6 @@ pub trait PidController<T> {
     fn update_skpd(&mut self, measurement: T, measurement_delta: T, delta_t: T) -> T;
 }
 
-/// Gains for PID controller.
-/// Includes classical PID (`kp`, `ki`, and `kd`) gains and also<br>
-/// setpoint gain (`ks` - classical feed forward) and<br>
-/// setpoint derivative gain (`kk`. kick - called feedforward by Betaflight).<br>
-///
-/// Uses "independent PID" notation, where the gains are denoted as kp, ki, kd etc.<br>
-/// (In the "dependent PID" notation `kc`, `tau_i`, and `tau_d` parameters are used, where `kp = kc`, `ki = kc/tau_i`, `kd = kc*tau_d`).
-///
-#[derive(Clone, Copy, Debug, PartialEq, Deserialize, Serialize)]
-pub struct PidGains<T> {
-    /// proportional gain.
-    pub kp: T,
-    /// integral gain.
-    pub ki: T,
-    /// derivative gain.
-    pub kd: T,
-    /// setpoint gain.
-    pub ks: T,
-    /// setpoint derivative gain ('kick').
-    pub kk: T,
-}
-
-impl<T: Float> Default for PidGains<T> {
-    fn default() -> Self {
-        Self::new(T::one(), T::zero(), T::zero(), T::zero(), T::zero())
-    }
-}
-
-impl<T: Float> PidGains<T> {
-    pub const fn new(kp: T, ki: T, kd: T, ks: T, kk: T) -> Self {
-        Self { kp, ki, kd, ks, kk }
-    }
-}
-
-/// Pid integral anti-windup parameters.<br>
-///
-#[derive(Clone, Copy, Debug, PartialEq, Deserialize, Serialize)]
-pub struct PidLimits<T> {
-    /// Integral windup limit for positive integral.
-    pub integral_max: Option<T>,
-    /// Integral windup limit for negative integral.
-    pub integral_min: Option<T>,
-    /// For integral windup control.
-    pub output_saturation_value: Option<T>,
-}
-
-impl<T: Float + ConstZero> Default for PidLimits<T> {
-    fn default() -> Self {
-        Self::new()
-    }
-}
-
-impl<T: Float + ConstZero> PidLimits<T> {
-    #[must_use]
-    pub const fn new() -> Self {
-        Self {
-            integral_max: None,
-            integral_min: None,
-            output_saturation_value: None,
-        }
-    }
-}
-
-/// P, I, D, S, and K errors as calculated by PID controller.<br><br>
-///
-#[derive(Clone, Copy, Debug, PartialEq, Deserialize, Serialize)]
-pub struct PidErrors<T> {
-    pub p: T,
-    pub i: T,
-    pub d: T,
-    pub s: T,
-    pub k: T,
-}
-
-impl<T: Float> Default for PidErrors<T> {
-    fn default() -> Self {
-        Self::new(T::zero(), T::zero(), T::zero(), T::zero(), T::zero())
-    }
-}
-
-impl<T: Float> PidErrors<T> {
-    #[allow(clippy::many_single_char_names)]
-    pub const fn new(p: T, i: T, d: T, s: T, k: T) -> Self {
-        Self { p, i, d, s, k }
-    }
-}
-
 /// PID controller with open loop control (generic form).<br>
 /// `Pidf32` and `Pidf64` aliases are available.<br>
 /// This includes setpoint gain (classical feed forward) and<br>
@@ -303,25 +216,51 @@ impl<T: Float> Pid<T> {
             + self.gains.kk * self.setpoint_derivative
     }
 
-    /// Return the pid gains. The set value of ki is returned, whether integration is turned on or not.
-    pub fn gains(&self) -> PidGains<T> {
-        PidGains {
-            kp: self.gains.kp,
-            ki: self.ki_saved,
-            kd: self.gains.kd,
-            ks: self.gains.ks,
-            kk: self.gains.kk,
-        }
+    pub fn set_setpoint(&mut self, setpoint: T) {
+        self.setpoint_previous = self.setpoint;
+        self.setpoint = setpoint;
     }
 
-    pub fn set_gains(&mut self, gains: PidGains<T>) {
-        self.gains = gains;
+    pub fn set_setpoint_derivative(&mut self, setpoint_derivative: T) {
+        self.setpoint_derivative = setpoint_derivative;
+    }
+
+    pub fn set_setpoint_for_delta_t(&mut self, setpoint: T, delta_t: T) {
+        self.setpoint_previous = self.setpoint;
+        self.setpoint = setpoint;
+        self.setpoint_derivative = (self.setpoint - self.setpoint_previous) / delta_t;
+    }
+
+    pub fn setpoint(&self) -> T {
+        self.setpoint
+    }
+
+    pub fn previous_setpoint(&self) -> T {
+        self.setpoint_previous
+    }
+
+    pub fn setpoint_delta(&self) -> T {
+        self.setpoint - self.setpoint_previous
+    }
+
+    /// previous measurement, useful for `Dterm` filtering.
+    pub fn previous_measurement(&self) -> T {
+        self.measurement_previous
+    }
+
+    pub fn reset_integral(&mut self) {
+        self.error_integral = T::zero();
+    }
+
+    pub fn switch_integration_off(&mut self) {
         self.ki_saved = self.gains.ki;
-        if self.gains.ki.abs() <= T::epsilon() {
-            // If the new Ki is zero, the integral term cannot contribute to the output.
-            // Clear the accumulator to prevent massive hidden windup if Ki is re-enabled later.
-            self.error_integral = T::zero();
-        }
+        self.gains.ki = T::zero();
+        self.error_integral = T::zero();
+    }
+
+    pub fn switch_integration_on(&mut self) {
+        self.gains.ki = self.ki_saved;
+        self.error_integral = T::zero();
     }
 
     /// Safely update PID gains on the fly without causing an output bump.
@@ -355,20 +294,118 @@ impl<T: Float> Pid<T> {
             self.error_integral = self.error_integral.max(min);
         }
     }
+}
 
-    pub fn reset_integral(&mut self) {
-        self.error_integral = T::zero();
+/// Gains for PID controller.
+/// Includes classical PID (`kp`, `ki`, and `kd`) gains and also<br>
+/// setpoint gain (`ks` - classical feed forward) and<br>
+/// setpoint derivative gain (`kk`. kick - called feedforward by Betaflight).<br>
+///
+/// Uses "independent PID" notation, where the gains are denoted as kp, ki, kd etc.<br>
+/// (In the "dependent PID" notation `kc`, `tau_i`, and `tau_d` parameters are used, where `kp = kc`, `ki = kc/tau_i`, `kd = kc*tau_d`).
+///
+#[derive(Clone, Copy, Debug, PartialEq, Deserialize, Serialize)]
+pub struct PidGains<T> {
+    /// proportional gain.
+    pub kp: T,
+    /// integral gain.
+    pub ki: T,
+    /// derivative gain.
+    pub kd: T,
+    /// setpoint gain.
+    pub ks: T,
+    /// setpoint derivative gain ('kick').
+    pub kk: T,
+}
+
+impl<T: Float> Default for PidGains<T> {
+    fn default() -> Self {
+        Self::new(T::one(), T::zero(), T::zero(), T::zero(), T::zero())
+    }
+}
+
+impl<T: Float> PidGains<T> {
+    pub const fn new(kp: T, ki: T, kd: T, ks: T, kk: T) -> Self {
+        Self { kp, ki, kd, ks, kk }
+    }
+}
+
+impl<T: Float> Pid<T> {
+    /// Return the pid gains. The set value of ki is returned, whether integration is turned on or not.
+    pub fn gains(&self) -> PidGains<T> {
+        PidGains {
+            kp: self.gains.kp,
+            ki: self.ki_saved,
+            kd: self.gains.kd,
+            ks: self.gains.ks,
+            kk: self.gains.kk,
+        }
     }
 
-    pub fn switch_integration_off(&mut self) {
+    pub fn set_gains(&mut self, gains: PidGains<T>) {
+        self.gains = gains;
         self.ki_saved = self.gains.ki;
-        self.gains.ki = T::zero();
-        self.error_integral = T::zero();
+        if self.gains.ki.abs() <= T::epsilon() {
+            // If the new Ki is zero, the integral term cannot contribute to the output.
+            // Clear the accumulator to prevent massive hidden windup if Ki is re-enabled later.
+            self.error_integral = T::zero();
+        }
     }
+}
 
-    pub fn switch_integration_on(&mut self) {
-        self.gains.ki = self.ki_saved;
-        self.error_integral = T::zero();
+impl<T: Float + Default> From<PidGains<T>> for Pid<T> {
+    fn from(pid: PidGains<T>) -> Self {
+        Self {
+            gains: PidGains {
+                kp: pid.kp,
+                ki: pid.ki,
+                kd: pid.kd,
+                ks: pid.ks,
+                kk: pid.kk,
+            },
+            limits: PidLimits {
+                integral_max: None,
+                integral_min: None,
+                output_saturation_value: None,
+            },
+            ki_saved: pid.ki,
+            measurement_previous: T::default(),
+            setpoint: T::default(),
+            setpoint_previous: T::default(),
+            setpoint_derivative: T::default(),
+            error_derivative: T::default(),
+            error_integral: T::default(),
+            error_previous: T::default(),
+        }
+    }
+}
+
+/// Pid integral anti-windup parameters.<br>
+///
+#[derive(Clone, Copy, Debug, PartialEq, Deserialize, Serialize)]
+pub struct PidLimits<T> {
+    /// Integral windup limit for positive integral.
+    pub integral_max: Option<T>,
+    /// Integral windup limit for negative integral.
+    pub integral_min: Option<T>,
+    /// For integral windup control.
+    pub output_saturation_value: Option<T>,
+}
+
+impl<T: Float + ConstZero> Default for PidLimits<T> {
+    fn default() -> Self {
+        Self::new()
+    }
+}
+
+impl<T: Float + ConstZero> PidLimits<T> {
+    #[must_use]
+    pub const fn new() -> Self {
+        Self {
+            integral_max: None,
+            integral_min: None,
+            output_saturation_value: None,
+        }
     }
 }
 
@@ -399,37 +436,27 @@ impl<T: Float> Pid<T> {
     }
 }
 
-impl<T: Float> Pid<T> {
-    pub fn set_setpoint(&mut self, setpoint: T) {
-        self.setpoint_previous = self.setpoint;
-        self.setpoint = setpoint;
-    }
+/// P, I, D, S, and K errors as calculated by PID controller.<br><br>
+///
+#[derive(Clone, Copy, Debug, PartialEq, Deserialize, Serialize)]
+pub struct PidErrors<T> {
+    pub p: T,
+    pub i: T,
+    pub d: T,
+    pub s: T,
+    pub k: T,
+}
 
-    pub fn set_setpoint_derivative(&mut self, setpoint_derivative: T) {
-        self.setpoint_derivative = setpoint_derivative;
+impl<T: Float> Default for PidErrors<T> {
+    fn default() -> Self {
+        Self::new(T::zero(), T::zero(), T::zero(), T::zero(), T::zero())
     }
+}
 
-    pub fn setpoint(&self) -> T {
-        self.setpoint
-    }
-
-    pub fn previous_setpoint(&self) -> T {
-        self.setpoint_previous
-    }
-
-    /// previous measurement, useful for `Dterm` filtering.
-    pub fn previous_measurement(&self) -> T {
-        self.measurement_previous
-    }
-
-    pub fn setpoint_delta(&self) -> T {
-        self.setpoint - self.setpoint_previous
-    }
-
-    pub fn set_setpoint_for_delta_t(&mut self, setpoint: T, delta_t: T) {
-        self.setpoint_previous = self.setpoint;
-        self.setpoint = setpoint;
-        self.setpoint_derivative = (self.setpoint - self.setpoint_previous) / delta_t;
+impl<T: Float> PidErrors<T> {
+    #[allow(clippy::many_single_char_names)]
+    pub const fn new(p: T, i: T, d: T, s: T, k: T) -> Self {
+        Self { p, i, d, s, k }
     }
 }
 
@@ -473,32 +500,5 @@ impl<T: Float> Pid<T> {
         self.error_derivative = T::zero();
         self.error_integral = T::zero();
         self.error_previous = T::zero();
-    }
-}
-
-impl<T: Float + Default> From<PidGains<T>> for Pid<T> {
-    fn from(pid: PidGains<T>) -> Self {
-        Self {
-            gains: PidGains {
-                kp: pid.kp,
-                ki: pid.ki,
-                kd: pid.kd,
-                ks: pid.ks,
-                kk: pid.kk,
-            },
-            limits: PidLimits {
-                integral_max: None,
-                integral_min: None,
-                output_saturation_value: None,
-            },
-            ki_saved: pid.ki,
-            measurement_previous: T::default(),
-            setpoint: T::default(),
-            setpoint_previous: T::default(),
-            setpoint_derivative: T::default(),
-            error_derivative: T::default(),
-            error_integral: T::default(),
-            error_previous: T::default(),
-        }
     }
 }

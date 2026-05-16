@@ -5,8 +5,8 @@ mod tests {
     #![allow(clippy::float_cmp)]
 
     use super::*;
-    use serde::{Deserialize, Serialize};
     use pidsk_controller::UpdatePidController;
+    use serde::{Deserialize, Serialize};
 
     macro_rules! assert_near {
         ($left:expr, $right:expr) => {
@@ -830,7 +830,8 @@ mod tests {
 
         pid.update_gains(new_gains);
         assert_eq!(
-            0.0, pid.error().i,
+            0.0,
+            pid.error().i,
             "Integral accumulator should be wiped clean when Ki is 0"
         );
 
