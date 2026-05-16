@@ -136,6 +136,8 @@ impl<T: Float> PidController<T> for Pid<T> {
     }
 
     fn update_delta_iterm(&mut self, measurement: T, measurement_delta: T, iterm_error: T, delta_t: T) -> T {
+        debug_assert!(delta_t != T::zero());
+
         self.measurement_previous = measurement;
 
         self.error = self.setpoint - measurement;
@@ -187,6 +189,8 @@ impl<T: Float> PidController<T> for Pid<T> {
     }
 
     fn update_spd(&mut self, measurement: T, measurement_delta: T, delta_t: T) -> T {
+        debug_assert!(delta_t != T::zero());
+
         self.measurement_previous = measurement;
         self.error = self.setpoint - measurement;
 
@@ -223,6 +227,7 @@ impl<T: Float> Pid<T> {
     }
 
     pub fn set_setpoint_for_delta_t(&mut self, setpoint: T, delta_t: T) {
+        debug_assert!(delta_t != T::zero());
         self.setpoint_previous = self.setpoint;
         self.setpoint = setpoint;
         self.setpoint_derivative = (self.setpoint - self.setpoint_previous) / delta_t;
