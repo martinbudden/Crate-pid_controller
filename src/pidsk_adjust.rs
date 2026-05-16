@@ -6,7 +6,7 @@ use crate::pidsk_controller::PidController;
 /// ```
 /// # use pidsk_controller::{Pidf32,PidGainsf32};
 /// # use pidsk_controller::UpdatePidController;
-/// # let mut pid_controller = Pidf32::with_gains(PidGainsf32 { kp:0.1, ki:0.1, kd:0.01, ks: 0.0, kk: 0.0 });
+/// # let mut pid_controller = Pidf32::new(PidGainsf32 { kp:0.1, ki:0.1, kd:0.01, ks: 0.0, kk: 0.0 });
 /// # let dt = 0.001_f32;
 /// let measurement: f32 = 9.2;
 /// let output = measurement.adjust_using(&mut pid_controller, dt);
@@ -22,8 +22,6 @@ pub trait UpdatePidController<T> {
         delta_t: T,
     ) -> Self;
     fn adjust_using_sp<P: PidController<T>>(self, pid_controller: &mut P) -> Self;
-    fn adjust_using_spi<P: PidController<f32>>(self, pid_controller: &mut P, delta_t: f32) -> Self;
-    fn adjust_using_skpi<P: PidController<f32>>(self, pid_controller: &mut P, delta_t: f32) -> Self;
     fn adjust_using_spd<P: PidController<T>>(self, pid_controller: &mut P, measurement_delta: T, delta_t: T) -> Self;
     fn adjust_using_skpd<P: PidController<T>>(self, pid_controller: &mut P, measurement_delta: T, delta_t: T) -> Self;
 }
@@ -57,14 +55,6 @@ impl UpdatePidController<f32> for f32 {
         pid_controller.update_sp(self)
     }
 
-    fn adjust_using_spi<P: PidController<f32>>(self, pid_controller: &mut P, delta_t: f32) -> Self {
-        // self is measurement:f32, pid.update returns f32
-        pid_controller.update_spi(self, delta_t)
-    }
-    fn adjust_using_skpi<P: PidController<f32>>(self, pid_controller: &mut P, delta_t: f32) -> Self {
-        // self is measurement:f32, pid.update returns f32
-        pid_controller.update_skpi(self, delta_t)
-    }
     fn adjust_using_spd<P: PidController<f32>>(
         self,
         pid_controller: &mut P,

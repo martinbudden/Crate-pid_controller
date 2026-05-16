@@ -23,6 +23,26 @@ Once the API has stabilized this project will adopt semantic versioning, the fir
 
 ### Security
 
+## [0.1.5] - 2026-05-16
+
+### Added
+
+- `update_gains` for bumpless changing of gains.
+
+### Changed
+
+- Made limits `Option` type.
+- Improved anti-windup handling.
+- Constructors changed to `new(gains)` and `with_limits(gains, limits)`.
+
+## Removed
+
+- `integral_threshold` from `PidLimits`.
+- `update_spi` function.
+- `update_skpi` function
+- Individual accessor functions from `PidGains`.
+- Individual accessor functions from `PidErrors`.
+
 ## [0.1.4] - 2026-05-14
 
 ### Changed

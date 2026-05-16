@@ -7,6 +7,8 @@ pub type Pidf32 = Pid<f32>;
 pub type PidGainsf32 = PidGains<f32>;
 /// `PidError` using `f32` values.
 pub type PidErrorf32 = PidErrors<f32>;
+/// `PidLimits` using `f32` values.
+pub type PidLimitsf32 = PidLimits<f32>;
 
 /// `Pid` using `f64` values.
 pub type Pidf64 = Pid<f64>;
@@ -14,6 +16,8 @@ pub type Pidf64 = Pid<f64>;
 pub type PidGainsf64 = PidGains<f64>;
 /// `PidError` using `f64` values.
 pub type PidErrorf64 = PidErrors<f64>;
+/// `PidLimits` using `f32` values.
+pub type PidLimitsf64 = PidLimits<f64>;
 
 /// PID controller function-call trait.<br>
 /// Declares the various forms of the `update` functions.<br><br>
@@ -23,8 +27,6 @@ pub trait PidController<T> {
     fn update_delta(&mut self, measurement: T, measurement_delta: T, delta_t: T) -> T;
     fn update_delta_iterm(&mut self, measurement: T, measurement_delta: T, iterm_error: T, delta_t: T) -> T;
     fn update_sp(&mut self, measurement: T) -> T;
-    fn update_spi(&mut self, measurement: T, delta_t: T) -> T;
-    fn update_skpi(&mut self, measurement: T, delta_t: T) -> T;
     fn update_spd(&mut self, measurement: T, measurement_delta: T, delta_t: T) -> T;
     fn update_skpd(&mut self, measurement: T, measurement_delta: T, delta_t: T) -> T;
 }
@@ -68,13 +70,11 @@ impl<T: Float> PidGains<T> {
 #[derive(Clone, Copy, Debug, PartialEq, Deserialize, Serialize)]
 pub struct PidLimits<T> {
     /// Integral windup limit for positive integral.
-    integral_max: T,
+    pub integral_max: Option<T>,
     /// Integral windup limit for negative integral.
-    integral_min: T,
-    /// Threshold for PID integration. Can be set to avoid integral wind-up due to movement in motor's backlash zone.
-    integral_threshold: T,
+    pub integral_min: Option<T>,
     /// For integral windup control.
-    output_saturation_value: T,
+    pub output_saturation_value: Option<T>,
 }
 
 impl<T: Float + ConstZero> Default for PidLimits<T> {
@@ -84,12 +84,12 @@ impl<T: Float + ConstZero> Default for PidLimits<T> {
 }
 
 impl<T: Float + ConstZero> PidLimits<T> {
+    #[must_use]
     pub const fn new() -> Self {
         Self {
-            integral_max: T::ZERO,
-            integral_min: T::ZERO,
-            integral_threshold: T::ZERO,
-            output_saturation_value: T::ZERO,
+            integral_max: None,
+            integral_min: None,
+            output_saturation_value: None,
         }
     }
 }
@@ -126,9 +126,10 @@ impl<T: Float> PidErrors<T> {
 /// Uses "independent PID" notation, where the gains are denoted as kp, ki, kd etc.<br>
 /// (In the "dependent PID" notation `kc`, `tau_i`, and `tau_d` parameters are used, where `kp = kc`, `ki = kc/tau_i`, `kd = kc*tau_d`).
 ///
-#[derive(Clone, Copy, Debug, PartialEq)]
+#[derive(Clone, Copy, Debug, PartialEq, Deserialize, Serialize)]
 pub struct Pid<T> {
     gains: PidGains<T>,
+    limits: PidLimits<T>,
     /// saved value of pid.ki, so integration can be switched on and off.
     ki_saved: T,
     measurement_previous: T,
@@ -140,8 +141,6 @@ pub struct Pid<T> {
     error_derivative: T,
     error_integral: T,
     error_previous: T,
-
-    limits: PidLimits<T>,
 }
 
 /// Default `Pid`.
@@ -151,18 +150,20 @@ pub struct Pid<T> {
 ///
 /// let pid = Pidf32::default();
 ///
-/// assert_eq!(1.0, pid.kp());
+/// assert_eq!(1.0, pid.gains().kp);
 /// ```
 impl<T: Float + ConstZero + ConstOne> Default for Pid<T> {
     fn default() -> Self {
-        Self::new()
+        Self::new(PidGains::new(T::ONE, T::ZERO, T::ZERO, T::ZERO, T::ZERO))
     }
 }
 
+// Constructors
 impl<T: Float + ConstZero + ConstOne> Pid<T> {
-    pub const fn with_gains(gains: PidGains<T>) -> Self {
+    pub const fn with_limits(gains: PidGains<T>, limits: PidLimits<T>) -> Self {
         Self {
             gains,
+            limits,
             ki_saved: gains.ki,
             measurement_previous: T::ZERO,
             setpoint: T::ZERO,
@@ -171,12 +172,11 @@ impl<T: Float + ConstZero + ConstOne> Pid<T> {
             error_derivative: T::ZERO,
             error_integral: T::ZERO,
             error_previous: T::ZERO,
-            limits: PidLimits::new(),
         }
     }
 
-    pub const fn new() -> Self {
-        Self::with_gains(PidGains::new(T::ONE, T::ZERO, T::ZERO, T::ZERO, T::ZERO))
+    pub const fn new(gains: PidGains<T>) -> Self {
+        Self::with_limits(gains, PidLimits::new())
     }
 }
 
@@ -185,7 +185,7 @@ impl<T: Float> PidController<T> for Pid<T> {
     /// ```
     /// # use pidsk_controller::{Pidf32,PidController,PidGainsf32};
     /// let delta_t: f32 = 0.01;
-    /// let mut pid = Pidf32::with_gains(PidGainsf32 { kp:0.1, ki:0.0, kd:0.0, ks:0.0, kk:0.0 });
+    /// let mut pid = Pidf32::new(PidGainsf32 { kp:0.1, ki:0.0, kd:0.0, ks:0.0, kk:0.0 });
     ///
     /// pid.set_setpoint(8.7);
     ///
@@ -205,7 +205,7 @@ impl<T: Float> PidController<T> for Pid<T> {
     /// # use pidsk_controller::{Pidf32,PidController,PidGainsf32};
     /// # use signal_filters::{Pt1Filterf32,SignalFilter};
     /// let delta_t: f32 = 0.01;
-    /// let mut pid = Pidf32::with_gains(PidGainsf32 { kp:0.1, ki:0.0, kd:0.01, ks:0.0, kk:0.0 });
+    /// let mut pid = Pidf32::new(PidGainsf32 { kp:0.1, ki:0.0, kd:0.01, ks:0.0, kk:0.0 });
     /// let mut filter = Pt1Filterf32::with_k(1.0);
     ///
     /// pid.set_setpoint(2.1);
@@ -224,49 +224,44 @@ impl<T: Float> PidController<T> for Pid<T> {
 
     fn update_delta_iterm(&mut self, measurement: T, measurement_delta: T, iterm_error: T, delta_t: T) -> T {
         self.measurement_previous = measurement;
+
         let error = self.setpoint - measurement;
-        self.error_derivative = -measurement_delta / delta_t; // note minus sign, error delta has reverse polarity to measurement delta
-        // Partial PID sum, excludes ITerm
-        // has additional S setpoint(openloop) and K kick(setpoint derivative) terms
-        let partial_sum = self.gains.kp * error
-            + self.gains.kd * self.error_derivative
-            + self.gains.ks * self.setpoint
-            + self.gains.kk * self.setpoint_derivative;
-
-        if self.limits.integral_threshold == T::zero() || (error).abs() >= self.limits.integral_threshold {
-            // "integrate" the error
-            self.error_integral = self.error_integral + self.gains.ki * iterm_error * delta_t; // Euler integration
-            //self.error_integral += self.pid.ki*0.5F*(iTermError + _errorPrevious)*delta_t; // integration using trapezoid rule
-            // Anti-windup via integral clamping
-            if self.limits.integral_max > T::zero() && self.error_integral > self.limits.integral_max {
-                self.error_integral = self.limits.integral_max;
-            } else if self.limits.integral_min < T::zero() && self.error_integral < self.limits.integral_min {
-                self.error_integral = self.limits.integral_min;
-            }
-        }
         self.error_previous = error;
+        self.error_derivative = -measurement_delta / delta_t; // note minus sign, error delta has reverse polarity to measurement delta
 
-        if self.limits.output_saturation_value > T::zero() {
-            // Anti-windup by avoiding output saturation.
-            // Check if partialSum + self.error_integral saturates the output
-            // If so, the excess value above saturation does not help convergence to the setpoint and will result in
-            // overshoot when the P value eventually comes down.
-            // So limit the self.error_integral to a value that avoids output saturation.
-            if self.error_integral > self.limits.output_saturation_value - partial_sum {
-                self.error_integral = self.limits.output_saturation_value - partial_sum;
-                if self.error_integral < T::zero() {
-                    self.error_integral = T::zero();
-                }
-            } else if self.error_integral < -self.limits.output_saturation_value - partial_sum {
-                self.error_integral = -self.limits.output_saturation_value - partial_sum;
-                if self.error_integral > T::zero() {
-                    self.error_integral = T::zero();
-                }
+        let partial_sum = self.partial_sum();
+
+        // Perform Euler integration
+        self.error_integral = self.error_integral + self.gains.ki * iterm_error * delta_t;
+
+        // Anti-windup via integral clamping
+        if let Some(max) = self.limits.integral_max
+            && self.error_integral > max
+        {
+            self.error_integral = max;
+        }
+        if let Some(min) = self.limits.integral_min
+            && self.error_integral < min
+        {
+            self.error_integral = min;
+        }
+
+        // Dynamic Anti-Windup Clamping based on Output Saturation Limit
+        if let Some(output_saturation_value) = self.limits.output_saturation_value {
+            // Determine dynamic upper and lower boundaries for the integral term
+            let max_allowed_integral = output_saturation_value - partial_sum;
+            let min_allowed_integral = -output_saturation_value - partial_sum;
+
+            // Clamp the accumulator within the calculated dynamic window
+            if self.error_integral > max_allowed_integral {
+                self.error_integral = max_allowed_integral;
+            } else if self.error_integral < min_allowed_integral {
+                self.error_integral = min_allowed_integral;
             }
         }
 
         // The PID calculation with additional S setpoint(openloop) and K kick(setpoint derivative) terms
-        //  P+D+S+K +  I
+        // P+D+S+K  + I
         partial_sum + self.error_integral
     }
 
@@ -276,55 +271,8 @@ impl<T: Float> PidController<T> for Pid<T> {
         self.error_previous = error;
 
         // The P (no I, no D) calculation with additional S setpoint(openloop) term
-        //       P                   + S
+        //         P          + S
         self.gains.kp * error + self.gains.ks * self.setpoint
-    }
-
-    fn update_spi(&mut self, measurement: T, delta_t: T) -> T {
-        self.measurement_previous = measurement;
-        let error = self.setpoint - measurement;
-        let partial_sum: T = self.gains.kp * error + self.gains.ks * self.setpoint;
-
-        if self.limits.integral_threshold == T::zero() || error.abs() >= self.limits.integral_threshold {
-            // "integrate" the error
-            self.error_integral = self.error_integral + self.gains.ki * error * delta_t; // Euler integration
-
-            //_error_integral += self.pid.ki*0.5F*(error + self.errorPrevious)*delta_t; // integration using trapezoid rule
-            // Anti-windup via integral clamping
-            if self.limits.integral_max > T::zero() && self.error_integral > self.limits.integral_max {
-                self.error_integral = self.limits.integral_max;
-            } else if self.limits.integral_min < T::zero() && self.error_integral < self.limits.integral_min {
-                self.error_integral = self.limits.integral_min;
-            }
-        }
-        self.error_previous = error;
-
-        if self.limits.output_saturation_value > T::zero() {
-            // Anti-windup by avoiding output saturation.
-            // Check if partial_sum + self.error_integral saturates the output
-            // If so, the excess value above saturation does not help convergence to the setpoint and will result in
-            // overshoot when the P value eventually comes down.
-            // So limit the self.error_integral to a value that avoids output saturation.
-            if self.error_integral > self.limits.output_saturation_value - partial_sum {
-                self.error_integral = self.limits.output_saturation_value - partial_sum;
-                if self.error_integral < T::zero() {
-                    self.error_integral = T::zero();
-                }
-            } else if self.error_integral < -self.limits.output_saturation_value - partial_sum {
-                self.error_integral = -self.limits.output_saturation_value - partial_sum;
-                if self.error_integral < T::zero() {
-                    self.error_integral = T::zero();
-                }
-            }
-        }
-
-        // The PI (no D) calculation with additional S setpoint(openloop) term
-        // P + S    + I
-        partial_sum + self.error_integral
-    }
-
-    fn update_skpi(&mut self, measurement: T, delta_t: T) -> T {
-        self.update_spi(measurement, delta_t) + self.gains.kk * self.setpoint_derivative
     }
 
     fn update_spd(&mut self, measurement: T, measurement_delta: T, delta_t: T) -> T {
@@ -335,7 +283,7 @@ impl<T: Float> PidController<T> for Pid<T> {
         self.error_derivative = -measurement_delta / delta_t; // note minus sign, error delta has reverse polarity to measurement delta
 
         // The PD (no I) calculation with additional S setpoint(openloop) term
-        //       P                   + D                                   + S
+        //         P          + D                                     + S
         self.gains.kp * error + self.gains.kd * self.error_derivative + self.gains.ks * self.setpoint
     }
 
@@ -345,9 +293,14 @@ impl<T: Float> PidController<T> for Pid<T> {
 }
 
 impl<T: Float> Pid<T> {
-    pub fn set_gains(&mut self, gains: PidGains<T>) {
-        self.gains = gains;
-        self.ki_saved = self.gains.ki;
+    /// Partial PID sum, excludes `Iterm`,
+    /// has additional S setpoint(openloop) and K kick(setpoint derivative) terms.
+    #[inline]
+    pub fn partial_sum(&self) -> T {
+        self.gains.kp * self.error_previous
+            + self.gains.kd * self.error_derivative
+            + self.gains.ks * self.setpoint
+            + self.gains.kk * self.setpoint_derivative
     }
 
     /// Return the pid gains. The set value of ki is returned, whether integration is turned on or not.
@@ -361,51 +314,46 @@ impl<T: Float> Pid<T> {
         }
     }
 
-    pub fn set_kp(&mut self, kp: T) {
-        self.gains.kp = kp;
-    }
-
-    pub fn set_ki(&mut self, ki: T) {
-        self.gains.ki = ki;
+    pub fn set_gains(&mut self, gains: PidGains<T>) {
+        self.gains = gains;
         self.ki_saved = self.gains.ki;
+        if self.gains.ki.abs() <= T::epsilon() {
+            // If the new Ki is zero, the integral term cannot contribute to the output.
+            // Clear the accumulator to prevent massive hidden windup if Ki is re-enabled later.
+            self.error_integral = T::zero();
+        }
     }
 
-    pub fn set_kd(&mut self, kd: T) {
-        self.gains.kd = kd;
-    }
+    /// Safely update PID gains on the fly without causing an output bump.
+    pub fn update_gains(&mut self, new_gains: PidGains<T>) {
+        // Calculate the current components using OLD gains
+        let old_partial_sum = self.partial_sum();
+        let old_error_integral = self.error_integral;
 
-    pub fn set_ks(&mut self, ks: T) {
-        self.gains.ks = ks;
-    }
+        // Commit the new gains to the struct
+        self.set_gains(new_gains);
+        if self.error_integral == T::zero() {
+            return;
+        }
 
-    pub fn set_kk(&mut self, kk: T) {
-        self.gains.kk = kk;
-    }
+        // Calculate partial_sum using NEW gains
+        let new_partial_sum = self.partial_sum();
 
-    pub fn set_pid(&mut self, pid: PidGains<T>) {
-        self.gains = pid;
-        self.ki_saved = self.gains.ki;
-    }
+        self.error_integral = old_error_integral + old_partial_sum - new_partial_sum;
 
-    pub fn kp(&self) -> T {
-        self.gains.kp
-    }
+        // Force-clamp the newly calculated accumulator within the Option bounds
+        if let Some(output_saturation_value) = self.limits.output_saturation_value {
+            let max = output_saturation_value - new_partial_sum;
+            let min = -output_saturation_value - new_partial_sum;
+            self.error_integral = self.error_integral.clamp(min, max);
+        }
 
-    /// Return the set value of ki, whether integration is turned on or not.
-    pub fn ki(&self) -> T {
-        self.ki_saved
-    }
-
-    pub fn kd(&self) -> T {
-        self.gains.kd
-    }
-
-    pub fn ks(&self) -> T {
-        self.gains.ks
-    }
-
-    pub fn kk(&self) -> T {
-        self.gains.kk
+        if let Some(max) = self.limits.integral_max {
+            self.error_integral = self.error_integral.min(max);
+        }
+        if let Some(min) = self.limits.integral_min {
+            self.error_integral = self.error_integral.max(min);
+        }
     }
 
     pub fn reset_integral(&mut self) {
@@ -422,28 +370,36 @@ impl<T: Float> Pid<T> {
         self.gains.ki = self.ki_saved;
         self.error_integral = T::zero();
     }
+}
+
+impl<T: Float> Pid<T> {
+    pub fn limits(&self) -> PidLimits<T> {
+        self.limits
+    }
+
+    pub fn set_limits(&mut self, limits: PidLimits<T>) {
+        self.limits = limits;
+    }
 
     pub fn set_integral_max(&mut self, integral_max: T) {
-        self.limits.integral_max = integral_max;
+        self.limits.integral_max = Some(integral_max);
     }
 
     pub fn set_integral_min(&mut self, integral_min: T) {
-        self.limits.integral_min = integral_min;
+        self.limits.integral_min = Some(integral_min);
     }
 
     pub fn set_integral_limit(&mut self, integral_limit: T) {
-        self.limits.integral_max = integral_limit;
-        self.limits.integral_min = -integral_limit;
-    }
-
-    pub fn set_integral_threshold(&mut self, integral_threshold: T) {
-        self.limits.integral_threshold = integral_threshold;
+        self.limits.integral_max = Some(integral_limit);
+        self.limits.integral_min = Some(-integral_limit);
     }
 
     pub fn set_output_saturation_value(&mut self, output_saturation_value: T) {
-        self.limits.output_saturation_value = output_saturation_value;
+        self.limits.output_saturation_value = Some(output_saturation_value);
     }
+}
 
+impl<T: Float> Pid<T> {
     pub fn set_setpoint(&mut self, setpoint: T) {
         self.setpoint_previous = self.setpoint;
         self.setpoint = setpoint;
@@ -465,9 +421,7 @@ impl<T: Float> Pid<T> {
     pub fn previous_measurement(&self) -> T {
         self.measurement_previous
     }
-}
 
-impl<T: Float> Pid<T> {
     pub fn setpoint_delta(&self) -> T {
         self.setpoint - self.setpoint_previous
     }
@@ -495,7 +449,7 @@ impl<T: Float> Pid<T> {
         PidErrors {
             p: self.error_previous,
             i: if self.gains.ki == T::zero() {
-                self.gains.ki
+                T::zero()
             } else {
                 self.error_integral / self.gains.ki
             },
@@ -503,51 +457,6 @@ impl<T: Float> Pid<T> {
             s: self.setpoint,
             k: self.setpoint_derivative,
         }
-    }
-
-    pub fn error_p(&self) -> T {
-        self.error_previous * self.gains.kp
-    }
-
-    pub fn error_i(&self) -> T {
-        // self.error_integral is already multiplied by self.pid.ki
-        self.error_integral
-    }
-
-    pub fn error_d(&self) -> T {
-        self.error_derivative * self.gains.kd
-    }
-
-    pub fn error_s(&self) -> T {
-        self.setpoint * self.gains.ks
-    }
-
-    pub fn error_k(&self) -> T {
-        self.setpoint_derivative * self.gains.kk
-    }
-
-    pub fn error_raw_p(&self) -> T {
-        self.error_previous
-    }
-
-    pub fn error_raw_i(&self) -> T {
-        if self.gains.ki == T::zero() {
-            self.gains.ki
-        } else {
-            self.error_integral / self.gains.ki
-        }
-    }
-
-    pub fn error_raw_d(&self) -> T {
-        self.error_derivative
-    }
-
-    pub fn error_raw_s(&self) -> T {
-        self.setpoint
-    }
-
-    pub fn error_raw_k(&self) -> T {
-        self.setpoint_derivative
     }
 
     /// get previous error, for test code.
@@ -577,6 +486,11 @@ impl<T: Float + Default> From<PidGains<T>> for Pid<T> {
                 ks: pid.ks,
                 kk: pid.kk,
             },
+            limits: PidLimits {
+                integral_max: None,
+                integral_min: None,
+                output_saturation_value: None,
+            },
             ki_saved: pid.ki,
             measurement_previous: T::default(),
             setpoint: T::default(),
@@ -585,12 +499,6 @@ impl<T: Float + Default> From<PidGains<T>> for Pid<T> {
             error_derivative: T::default(),
             error_integral: T::default(),
             error_previous: T::default(),
-            limits: PidLimits {
-                integral_max: T::default(),
-                integral_min: T::default(),
-                integral_threshold: T::default(),
-                output_saturation_value: T::default(),
-            },
         }
     }
 }
